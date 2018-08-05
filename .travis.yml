@@ -16,5 +16,5 @@ install:
   - gometalinter --install
 
 script:
-  - gometalinter ./...
+  - gometalinter --disable-all -E vet -E gofmt -E misspell -E ineffassign -E goimports -E deadcode --tests ./...
   - golint ./..
