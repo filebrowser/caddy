@@ -17,6 +17,9 @@ import (
 	"github.com/hacdias/fileutils"
 	"github.com/mholt/caddy"
 	"github.com/mholt/caddy/caddyhttp/httpserver"
+
+	// importing go-rice assets
+	_ "github.com/filebrowser/caddy/assets"
 )
 
 var databases = map[string]*storm.DB{}
