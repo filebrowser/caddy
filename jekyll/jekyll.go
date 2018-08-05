@@ -3,8 +3,8 @@ package jekyll
 import (
 	"net/http"
 
-	"github.com/filebrowser/filebrowser"
 	"github.com/filebrowser/caddy/parser"
+	"github.com/filebrowser/filebrowser"
 	h "github.com/filebrowser/filebrowser/http"
 	"github.com/mholt/caddy"
 	"github.com/mholt/caddy/caddyhttp/httpserver"
