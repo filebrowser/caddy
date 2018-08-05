@@ -10,7 +10,7 @@ matrix:
   fast_finish: true
 
 install:
-  - go get ./..
+  - go get -t ./...
   - go get github.com/golang/lint/golint
   - go get github.com/alecthomas/gometalinter
   - gometalinter --install
