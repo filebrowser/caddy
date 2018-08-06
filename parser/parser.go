@@ -243,13 +243,15 @@ func Parse(c *caddy.Controller, plugin string) ([]*filebrowser.FileBrowser, erro
 		}
 
 		m := &filebrowser.FileBrowser{
-			NoAuth:          noAuth,
-			BaseURL:         "",
-			PrefixURL:       "",
-			ReCaptchaHost:   recaptchaHost,
-			ReCaptchaKey:    reCaptchaKey,
-			ReCaptchaSecret: reCaptchaSecret,
-			DefaultUser:     u,
+			NoAuth:    noAuth,
+			BaseURL:   "",
+			PrefixURL: "",
+			ReCaptcha: &filebrowser.ReCaptcha{
+				Host:   recaptchaHost,
+				Key:    reCaptchaKey,
+				Secret: reCaptchaSecret,
+			},
+			DefaultUser: u,
 			Store: &filebrowser.Store{
 				Config: bolt.ConfigStore{DB: db},
 				Users:  bolt.UsersStore{DB: db},
