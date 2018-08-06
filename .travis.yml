@@ -16,5 +16,5 @@ install:
   - gometalinter --install
 
 script:
-  - gometalinter --disable-all -E vet -E gofmt -E misspell -E ineffassign -E goimports -E deadcode --tests ./...
+  - gometalinter --exclude="rice-box.go" --disable-all -E vet -E gofmt -E misspell -E ineffassign -E goimports -E deadcode ./...
   - golint ./..
