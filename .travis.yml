@@ -1,20 +1,17 @@
-language: go
-
-go:
-  - 1.x
-  - tip
-
-matrix:
-  allow_failures:
-    - go: tip
-  fast_finish: true
-
-install:
-  - go get -t ./...
-  - go get github.com/golang/lint/golint
-  - go get github.com/alecthomas/gometalinter
-  - gometalinter --install
-
-script:
-  - gometalinter --exclude="rice-box.go" --disable-all -E vet -E gofmt -E misspell -E ineffassign -E goimports -E deadcode ./...
-  - golint ./..
+os: linux
+services: docker
+language: minimal
+install: skip
+addons:
+  apt:
+    packages:
+    - docker-ce
+stages:
+  - lint
+  - test
+jobs:
+  include:
+  - stage: lint
+    script: "./build/run_gometalinter.sh"
+  - stage: test
+    script: docker run --rm -itv $(pwd):/go/src/github.com/filebrowser/caddy filebrowser/dev sh -c "$(cat ./build/build_caddy.sh)"
