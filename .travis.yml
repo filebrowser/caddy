@@ -9,9 +9,11 @@ addons:
 stages:
   - lint
   - test
+env:
+  - CMD="docker run --rm -itv $(pwd):/go/src/github.com/filebrowser/caddy filebrowser/dev sh -c"
 jobs:
   include:
   - stage: lint
-    script: "./build/run_gometalinter.sh"
+    script: $CMD "cd .. && rm -rf filebrowser && cd caddy && go get ./... && gometalinter --exclude='rice-box.go' --deadline=300s ./..."
   - stage: test
-    script: docker run --rm -itv $(pwd):/go/src/github.com/filebrowser/caddy filebrowser/dev sh -c "$(cat ./build/build_caddy.sh)"
+    script: $CMD "$(cat ./build.sh)"
