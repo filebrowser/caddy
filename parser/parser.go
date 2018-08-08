@@ -242,16 +242,23 @@ func Parse(c *caddy.Controller, plugin string) ([]*filebrowser.FileBrowser, erro
 			recaptchaHost = "https://recaptcha.net"
 		}
 
+		authMethod := "default"
+		if noAuth {
+			authMethod = "none"
+		}
+
 		m := &filebrowser.FileBrowser{
-			NoAuth:    noAuth,
-			BaseURL:   "",
-			PrefixURL: "",
+			BaseURL:     "",
+			PrefixURL:   "",
+			DefaultUser: u,
+			Auth: &filebrowser.Auth{
+				Method: authMethod,
+			},
 			ReCaptcha: &filebrowser.ReCaptcha{
 				Host:   recaptchaHost,
 				Key:    reCaptchaKey,
 				Secret: reCaptchaSecret,
 			},
-			DefaultUser: u,
 			Store: &filebrowser.Store{
 				Config: bolt.ConfigStore{DB: db},
 				Users:  bolt.UsersStore{DB: db},
@@ -302,7 +309,6 @@ func Parse(c *caddy.Controller, plugin string) ([]*filebrowser.FileBrowser, erro
 			return nil, err
 		}
 
-		m.NoAuth = noAuth
 		m.SetBaseURL(baseURL)
 		m.SetPrefixURL(strings.TrimSuffix(caddyConf.Addr.Path, "/"))
 
