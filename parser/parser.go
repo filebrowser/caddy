@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	"github.com/asdine/storm"
-	"github.com/filebrowser/filebrowser"
-	"github.com/filebrowser/filebrowser/bolt"
-	"github.com/filebrowser/filebrowser/staticgen"
+	l "github.com/filebrowser/filebrowser/lib"
+	"github.com/filebrowser/filebrowser/lib/bolt"
+	"github.com/filebrowser/filebrowser/lib/staticgen"
 	"github.com/hacdias/fileutils"
 	"github.com/mholt/caddy"
 	"github.com/mholt/caddy/caddyhttp/httpserver"
@@ -25,14 +25,14 @@ import (
 var databases = map[string]*storm.DB{}
 
 // Parse ...
-func Parse(c *caddy.Controller, plugin string) ([]*filebrowser.FileBrowser, error) {
+func Parse(c *caddy.Controller, plugin string) ([]*l.FileBrowser, error) {
 	var (
-		configs []*filebrowser.FileBrowser
+		configs []*l.FileBrowser
 		err     error
 	)
 
 	for c.Next() {
-		u := &filebrowser.User{
+		u := &l.User{
 			Locale:        "en",
 			AllowCommands: true,
 			AllowEdit:     true,
@@ -41,7 +41,7 @@ func Parse(c *caddy.Controller, plugin string) ([]*filebrowser.FileBrowser, erro
 			Commands:      []string{"git", "svn", "hg"},
 			CSS:           "",
 			ViewMode:      "mosaic",
-			Rules:         []*filebrowser.Rule{},
+			Rules:         []*l.Rule{},
 		}
 
 		baseURL := "/"
@@ -155,7 +155,7 @@ func Parse(c *caddy.Controller, plugin string) ([]*filebrowser.FileBrowser, erro
 				}
 
 				u.ViewMode = c.Val()
-				if u.ViewMode != filebrowser.MosaicViewMode && u.ViewMode != filebrowser.ListViewMode {
+				if u.ViewMode != l.MosaicViewMode && u.ViewMode != l.ListViewMode {
 					return nil, c.ArgErr()
 				}
 			case "recaptcha_host":
@@ -238,24 +238,24 @@ func Parse(c *caddy.Controller, plugin string) ([]*filebrowser.FileBrowser, erro
 			authMethod = "none"
 		}
 
-		m := &filebrowser.FileBrowser{
+		m := &l.FileBrowser{
 			BaseURL:     "",
 			PrefixURL:   "",
 			DefaultUser: u,
-			Auth: &filebrowser.Auth{
+			Auth: &l.Auth{
 				Method: authMethod,
 			},
-			ReCaptcha: &filebrowser.ReCaptcha{
+			ReCaptcha: &l.ReCaptcha{
 				Host:   reCaptchaHost,
 				Key:    reCaptchaKey,
 				Secret: reCaptchaSecret,
 			},
-			Store: &filebrowser.Store{
+			Store: &l.Store{
 				Config: bolt.ConfigStore{DB: db},
 				Users:  bolt.UsersStore{DB: db},
 				Share:  bolt.ShareStore{DB: db},
 			},
-			NewFS: func(scope string) filebrowser.FileSystem {
+			NewFS: func(scope string) l.FileSystem {
 				return fileutils.Dir(scope)
 			},
 		}
