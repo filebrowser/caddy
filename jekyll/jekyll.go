@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/filebrowser/caddy/parser"
-	"github.com/filebrowser/filebrowser"
-	h "github.com/filebrowser/filebrowser/http"
+	l "github.com/filebrowser/filebrowser/lib"
+	h "github.com/filebrowser/filebrowser/lib/http"
 	"github.com/mholt/caddy"
 	"github.com/mholt/caddy/caddyhttp/httpserver"
 )
@@ -19,7 +19,7 @@ func init() {
 
 type plugin struct {
 	Next    httpserver.Handler
-	Configs []*filebrowser.FileBrowser
+	Configs []*l.FileBrowser
 }
 
 // ServeHTTP determines if the request is for this plugin, and if all prerequisites are met.
