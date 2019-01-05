@@ -10,10 +10,10 @@ stages:
   - lint
   - test
 env:
-  - CMD="docker run --rm -itv $(pwd):/go/src/github.com/filebrowser/caddy filebrowser/dev sh -c"
+  - CMD="docker run --rm -itv $(pwd):/src -w /src filebrowser/dev sh -c"
 jobs:
   include:
   - stage: lint
-    script: $CMD "cd .. && rm -rf filebrowser && cd caddy && go get ./... && gometalinter --exclude='rice-box.go' --deadline=300s ./..."
+    script: $CMD "go get -v ./... && golangci-lint run -v"
   - stage: test
     script: $CMD "$(cat ./build.sh)"
