@@ -181,6 +181,10 @@ func quickSetup(sto *storage.Storage, values map[string]string) error {
 	}
 
 	password, err := users.HashPwd("admin")
+	if err != nil {
+		return err
+	}
+
 	user := &users.User{
 		Username:     "admin",
 		Password:     password,
