@@ -7,13 +7,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/filebrowser/filebrowser/auth"
-
 	"github.com/asdine/storm"
+	"github.com/filebrowser/filebrowser/auth"
+	"github.com/filebrowser/filebrowser/errors"
 	"github.com/filebrowser/filebrowser/http"
 	"github.com/filebrowser/filebrowser/settings"
+	"github.com/filebrowser/filebrowser/storage"
 	"github.com/filebrowser/filebrowser/storage/bolt"
-
+	"github.com/filebrowser/filebrowser/users"
 	"github.com/mholt/caddy"
 	"github.com/mholt/caddy/caddyhttp/httpserver"
 )
@@ -68,16 +69,31 @@ func parse(c *caddy.Controller) (*handler, error) {
 		BaseURL: values["baseURL"],
 	}
 
-	// quick setup
+	ser.Root, err = filepath.Abs(ser.Root)
+	if err != nil {
+		return nil, err
+	}
 
 	db, err := storm.Open(values["database"])
 	if err != nil {
 		return nil, err
 	}
 
-	sto := bolt.NewStorage(db)
+	sto, err := bolt.NewStorage(db)
+	if err != nil {
+		return nil, err
+	}
 
 	set, err := sto.Settings.Get()
+	if err == errors.ErrNotExist {
+		err = quickSetup(sto, values)
+		if err != nil {
+			return nil, err
+		}
+
+		set, err = sto.Settings.Get()
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -134,6 +150,49 @@ func parse(c *caddy.Controller) (*handler, error) {
 	}, nil
 }
 
+func quickSetup(sto *storage.Storage, values map[string]string) error {
+	key, err := settings.GenerateKey()
+	if err != nil {
+		return err
+	}
+
+	set := &settings.Settings{
+		Key:    key,
+		Signup: false,
+		Defaults: settings.UserDefaults{
+			Scope:  ".",
+			Locale: "en",
+			Perm: users.Permissions{
+				Admin:    false,
+				Execute:  true,
+				Create:   true,
+				Rename:   true,
+				Modify:   true,
+				Delete:   true,
+				Share:    true,
+				Download: true,
+			},
+		},
+	}
+
+	err = sto.Settings.Save(set)
+	if err != nil {
+		return err
+	}
+
+	password, err := users.HashPwd("admin")
+	user := &users.User{
+		Username:     "admin",
+		Password:     password,
+		LockPassword: false,
+	}
+
+	set.Defaults.Apply(user)
+	user.Perm.Admin = true
+
+	return sto.Users.Save(user)
+}
+
 var warningTemplate = `[WARNING] A database is going to be created for your File Browser
 instance at the following configuration:
 
@@ -162,7 +221,7 @@ func parseDatabasePath(c *caddy.Controller, values map[string]string) error {
 		hasher.Write([]byte(cfg.Addr.Host + cfg.Addr.Path + values["baseURL"]))
 		sha := hex.EncodeToString(hasher.Sum(nil))
 		database = filepath.Join(assets, sha+".db")
-		fmt.Printf(warningTemplate, cfg.Addr.Host, cfg.Addr.Path, values["baseURL"], sha)
+		fmt.Printf(warningTemplate+"\n", cfg.Addr.Host, cfg.Addr.Path, values["baseURL"], sha)
 	}
 
 	values["database"] = database
