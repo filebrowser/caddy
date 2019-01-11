@@ -7,15 +7,27 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/filebrowser/filebrowser/auth"
+
+	"github.com/asdine/storm"
+	"github.com/filebrowser/filebrowser/http"
+	"github.com/filebrowser/filebrowser/settings"
+	"github.com/filebrowser/filebrowser/storage/bolt"
+
 	"github.com/mholt/caddy"
 	"github.com/mholt/caddy/caddyhttp/httpserver"
 )
 
 func parse(c *caddy.Controller) (*handler, error) {
 	values := map[string]string{
-		"baseURL":  "/",
-		"scope":    ".",
-		"database": "",
+		"baseURL":          "/",
+		"scope":            ".",
+		"database":         "",
+		"auth_method":      "json",
+		"auth_header":      "",
+		"recaptcha_host":   "",
+		"recaptcha_key":    "",
+		"recaptcha_secret": "",
 	}
 
 	args := c.RemainingArgs()
@@ -31,8 +43,8 @@ func parse(c *caddy.Controller) (*handler, error) {
 	for c.NextBlock() {
 		switch val := c.Val(); val {
 		case "database",
-			"locale",
 			"auth_method",
+			"auth_header",
 			"recaptcha_host",
 			"recaptcha_key",
 			"recaptcha_secret":
@@ -51,69 +63,75 @@ func parse(c *caddy.Controller) (*handler, error) {
 		return nil, err
 	}
 
-	/*
+	ser := &settings.Server{
+		Root:    values["root"],
+		BaseURL: values["baseURL"],
+	}
 
+	// quick setup
 
-			u.Scope = scope
-			u.FileSystem = fileutils.Dir(scope)
+	db, err := storm.Open(values["database"])
+	if err != nil {
+		return nil, err
+	}
 
-			var db *storm.DB
-			if stored, ok := databases[database]; ok {
-				db = stored
-			} else {
-				db, err = storm.Open(database)
-				databases[database] = db
-			}
+	sto := bolt.NewStorage(db)
 
-			if err != nil {
-				return nil, err
-			}
+	set, err := sto.Settings.Get()
+	if err != nil {
+		return nil, err
+	}
 
-			authMethod := "default"
-			if noAuth {
-				authMethod = "none"
-			}
+	var auther auth.Auther
 
-			m := &l.FileBrowser{
-				BaseURL:     "",
-				PrefixURL:   "",
-				DefaultUser: u,
-				Auth: &l.Auth{
-					Method: authMethod,
-				},
-				ReCaptcha: &l.ReCaptcha{
-					Host:   reCaptchaHost,
-					Key:    reCaptchaKey,
-					Secret: reCaptchaSecret,
-				},
-				Store: &l.Store{
-					Config: bolt.ConfigStore{DB: db},
-					Users:  bolt.UsersStore{DB: db},
-					Share:  bolt.ShareStore{DB: db},
-				},
-				NewFS: func(scope string) l.FileSystem {
-					return fileutils.Dir(scope)
-				},
-			}
+	switch settings.AuthMethod(values["auth_method"]) {
+	case auth.MethodJSONAuth:
+		set.AuthMethod = auth.MethodJSONAuth
+		auther = &auth.JSONAuth{
+			ReCaptcha: &auth.ReCaptcha{
+				Host:   values["recaptcha_host"],
+				Key:    values["recaptcha_key"],
+				Secret: values["recaptcha_secret"],
+			},
+		}
+	case auth.MethodNoAuth:
+		set.AuthMethod = auth.MethodNoAuth
+		auther = &auth.NoAuth{}
+	case auth.MethodProxyAuth:
+		set.AuthMethod = auth.MethodProxyAuth
+		header := values["auth_header"]
+		if header == "" {
+			return nil, c.ArgErr()
+		}
+		auther = &auth.ProxyAuth{Header: header}
+	default:
+		return nil, c.ArgErr()
+	}
 
-			err = m.Setup()
-			if err != nil {
-				return nil, err
-			}
+	err = sto.Settings.Save(set)
+	if err != nil {
+		return nil, err
+	}
 
+	err = sto.Settings.SaveServer(ser)
+	if err != nil {
+		return nil, err
+	}
 
+	err = sto.Auth.Save(auther)
+	if err != nil {
+		return nil, err
+	}
 
-			if err != nil {
-				return nil, err
-			}
+	httpHandler, err := http.NewHandler(sto, ser)
+	if err != nil {
+		return nil, err
+	}
 
-			m.SetBaseURL(baseURL)
-			m.SetPrefixURL(strings.TrimSuffix(caddyConf.Addr.Path, "/"))
-
-
-	} */
-
-	return nil, nil
+	return &handler{
+		Handler: httpHandler,
+		baseURL: values["baseURL"],
+	}, nil
 }
 
 var warningTemplate = `[WARNING] A database is going to be created for your File Browser
