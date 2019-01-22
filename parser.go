@@ -160,7 +160,7 @@ func quickSetup(sto *storage.Storage, values map[string]string) error {
 		Key:    key,
 		Signup: false,
 		Defaults: settings.UserDefaults{
-			Scope:  ".",
+			Scope:  values["scope"],
 			Locale: "en",
 			Perm: users.Permissions{
 				Admin:    false,
