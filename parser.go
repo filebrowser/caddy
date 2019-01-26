@@ -22,7 +22,7 @@ import (
 func parse(c *caddy.Controller) (*handler, error) {
 	values := map[string]string{
 		"baseURL":          "/",
-		"scope":            ".",
+		"root":             ".",
 		"database":         "",
 		"auth_method":      "json",
 		"auth_header":      "",
@@ -38,7 +38,7 @@ func parse(c *caddy.Controller) (*handler, error) {
 	}
 
 	if len(args) > 1 {
-		values["scope"] = args[1]
+		values["root"] = args[1]
 	}
 
 	for c.NextBlock() {
