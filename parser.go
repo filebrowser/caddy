@@ -19,6 +19,8 @@ import (
 	"github.com/mholt/caddy/caddyhttp/httpserver"
 )
 
+var databases = map[string]*storm.DB{}
+
 func parse(c *caddy.Controller) (*handler, error) {
 	values := map[string]string{
 		"baseURL":          "/",
@@ -74,9 +76,18 @@ func parse(c *caddy.Controller) (*handler, error) {
 		return nil, err
 	}
 
-	db, err := storm.Open(values["database"])
-	if err != nil {
-		return nil, err
+	var (
+		db *storm.DB
+		ok bool
+	)
+
+	if db, ok = databases[values["database"]]; !ok {
+		db, err = storm.Open(values["database"])
+		if err != nil {
+			return nil, err
+		}
+
+		databases[values["database"]] = db
 	}
 
 	sto, err := bolt.NewStorage(db)
