@@ -11,5 +11,5 @@ jobs:
   include:
   - stage: lint
     script: $CMD "go get -v ./... && golangci-lint run -v"
-  - stage: test
+  - stage: build
     script: $CMD "$(cat ./build.sh)"

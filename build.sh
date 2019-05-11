@@ -2,9 +2,32 @@
 
 set -euo pipefail
 
-git clone https://github.com/mholt/caddy
-cd caddy/caddy
-sed -i.bak 's#// This is where other plugins get plugged in (imported)#_ "github.com/filebrowser/caddy"#' caddymain/run.go
+commit=$(git rev-parse --short HEAD)
+mkdir -p build/caddy
+cd build/caddy
+
+cat >main.go <<EOL
+package main
+
+import (
+	"github.com/mholt/caddy/caddy/caddymain"
+
+	// plug in plugins here, for example:
+	_ "github.com/filebrowser/caddy"
+)
+
+func main() {
+	// optional: disable telemetry
+	// caddymain.EnableTelemetry = false
+	caddymain.Run()
+}
+EOL
+
+cat >go.mod <<EOL
+module caddy
+
+EOL
+
+go get "github.com/filebrowser/caddy@$commit"
 go get
-go run build.go
-ls -la
+go build main.go
