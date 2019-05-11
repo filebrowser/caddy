@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/asdine/storm"
@@ -59,6 +60,11 @@ func parse(c *caddy.Controller) (*handler, error) {
 		default:
 			return nil, c.ArgErr()
 		}
+	}
+
+	cfg := httpserver.GetConfig(c)
+	if cfg.Addr.Path != "" {
+		values["baseURL"] = path.Join(cfg.Addr.Path, values["baseURL"])
 	}
 
 	err := parseDatabasePath(c, values)
